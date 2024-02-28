@@ -201,51 +201,39 @@ def fill_in_outline_tree_divide_by_page(root_node, pdf_path, titles_list):
         if len(node['children']) > 0:
             fill_in_outline_tree_divide_by_page(node['children'], pdf_path, titles_list)
     return
-            
+   
+   
+   
+def get_doc_tree(file_path="/home/phm/code/python/Laws/电池法律/SR-2023-15_EN.pdf"):
+    extracted_text = extract_text_by_font(file_path)
+    # 去除多余的换行符
+    extracted_text = replace_excessive_newlines(extracted_text)
+    # 提取目录树
+    outline_tree = build_outline_tree(file_path)
+    titles_list = []
+    for node in outline_tree:
+        titles_list += get_node_titles(node)
+    titles_list = replace_chinese_punctuation(titles_list)
+    extracted_text = replace_chinese_punctuation(extracted_text)
+    titles_index = {}
+    for title in titles_list:
+        titles_index[title] = extracted_text.find(title)
+    def cal_right_rate(titles_index):
+        count = 0
+        for key, value in titles_index.items():
+            if value != -1:
+                count += 1
+        return count/len(titles_index)
+    if cal_right_rate(titles_index) == 1:
+        fill_in_outline_tree_divide_by_para(outline_tree, extracted_text, titles_list, start_pos=0)
+    else:
+        fill_in_outline_tree_divide_by_page(outline_tree, file_path, titles_list)
+    return outline_tree            
 # 使用示例
-pdf_file_path = "/home/phm/code/python/Laws/电池法律/SR-2023-15_EN.pdf"  # 替换为你的PDF文件路径
-# pdf_file_path = "文档拆分解析/2401.00368.pdf"
-# pdf_file_path = "文档拆分解析/CELEX_32023R1542_EN_TXT.pdf"
-# pdf_file_path = "文档拆分解析/UnifyingLargeLanguageModelsand KnowledgeGraphs- A Roadmap.pdf"
-extracted_text = extract_text_by_font(pdf_file_path)
-# 去除多余的换行符
-extracted_text = replace_excessive_newlines(extracted_text)
+pdf_path = "/home/phm/code/python/Laws/电池法律/SR-2023-15_EN.pdf"
 
-print(extracted_text)
+doc_tree = get_doc_tree(file_path=pdf_path)
+import json
 
-text_for_cut = extracted_text
-outline_tree = build_outline_tree(pdf_file_path)
-titles_list = []
-
-for node in outline_tree:
-    # 遍历outline_tree，找到所有的标题
-    titles_list += get_node_titles(node)
-    
-titles_list = replace_chinese_punctuation(titles_list)
-text_for_cut = replace_chinese_punctuation(text_for_cut)
-
-print(titles_list)
-    
-titles_index = {}
-for title in titles_list:
-    titles_index[title] = text_for_cut.find(title)
-    print(titles_index[title], title)
-
-def cal_right_rate(titles_index):
-    count = 0
-    for key, value in titles_index.items():
-        if value != -1:
-            count += 1
-    return count/len(titles_index)
-
-print(cal_right_rate(titles_index))
-
-if cal_right_rate(titles_index) == 1:
-    fill_in_outline_tree_divide_by_para(outline_tree, text_for_cut, titles_list, start_pos=0)
-else:
-    fill_in_outline_tree_divide_by_page(outline_tree, pdf_file_path, titles_list)
-
-
-print(1)
-# print(titles_index)
-
+with open("test.json", "w") as f:
+    json.dump(doc_tree, f, indent=4, ensure_ascii=False)
